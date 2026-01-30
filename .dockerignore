@@ -1,0 +1,21 @@
+# Local env and caches
+venv*/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+
+# Env files: set API_KEY etc. at runtime via -e or platform env
+.env
+.env.*
+
+# Git and IDE
+.git/
+.gitignore
+.cursor/
+
+# Docs and examples (optional; remove if you want them in image)
+# README.md
+# ENDPOINTS.md
+# example.py
