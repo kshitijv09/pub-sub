@@ -9,7 +9,7 @@ import os
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -104,10 +104,13 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Pub-Sub API", lifespan=lifespan)
 app.add_middleware(XAPIKeyMiddleware)
 
+router = APIRouter(prefix="/api/v1")
+app.include_router(router)
+
 
 # ---- Health ----
 
-@app.get("/health")
+@router.get("/health")
 def health() -> JSONResponse:
     """GET /health → { uptime_sec, topics, subscribers }."""
     uptime = time.time() - _start_time
@@ -121,7 +124,7 @@ def health() -> JSONResponse:
 
 # ---- Stats ----
 
-@app.get("/stats")
+@router.get("/stats")
 def stats() -> JSONResponse:
     """GET /stats → { topics: { name: { messages, subscribers } } }."""
     body = stats_response(registry.topic_stats())
@@ -134,7 +137,7 @@ class TopicCreateBody(BaseModel):
     name: str
 
 
-@app.post("/topics")
+@router.post("/topics")
 def create_topic(body: TopicCreateBody) -> JSONResponse:
     """POST /topics { name } → 201 { status: created, topic } or 409 Conflict."""
     name = (body.name or "").strip()
@@ -155,7 +158,7 @@ def create_topic(body: TopicCreateBody) -> JSONResponse:
     )
 
 
-@app.delete("/topics/{name}")
+@router.delete("/topics/{name}")
 def delete_topic(name: str) -> JSONResponse:
     """DELETE /topics/{name} → 200 { status: deleted, topic } or 404."""
     if not name:
@@ -172,7 +175,7 @@ def delete_topic(name: str) -> JSONResponse:
     )
 
 
-@app.get("/topics")
+@router.get("/topics")
 def list_topics() -> JSONResponse:
     """GET /topics → { topics: [ { name, subscribers } ] }."""
     body = topics_list_response(registry.list_topics())
@@ -187,7 +190,7 @@ class SubscribeBody(BaseModel):
     last_n: int = 0
 
 
-@app.post("/subscribe")
+@router.post("/subscribe")
 def subscribe(body: SubscribeBody) -> JSONResponse:
     """Subscribe to a topic (topic must exist). If last_n > 0, response includes replay of last_n messages."""
     req = SubscribeRequest(topic=body.topic, subscriber_id=body.subscriber_id)
@@ -255,7 +258,7 @@ def _ws_api_key_ok(websocket: WebSocket) -> bool:
     return key == expected
 
 
-@app.websocket("/ws")
+@router.websocket("/ws")
 async def websocket_handler(websocket: WebSocket) -> None:
     """
     WebSocket endpoint. Messages: ping, subscribe, unsubscribe, publish.

@@ -19,21 +19,21 @@ docker build -t pubsub-api .
 
 ### Run the container
 
-**X-API-Key is required.** Set `API_KEY` in the environment; clients must send header `X-API-Key: <API_KEY>`.
+**X-API-Key is required.** Set `API_KEY` in the environment; clients must send header `X-API-Key: my-secret-api-key`.
 
 ```bash
 docker run -p 8000:8000 -e API_KEY=your-secret-key pubsub-api
 ```
 
-- **HTTP:** `http://localhost:8000` (send header `X-API-Key: your-secret-key`)
-- **WebSocket:** `ws://localhost:8000/ws` (send header `X-API-Key: your-secret-key` on connect)
-- **Health:** `GET /health` (also requires `X-API-Key`)
+- **HTTP:** `http://localhost:8000/api/v1/...` (send header `X-API-Key: my-secret-api-key`)
+- **WebSocket:** `ws://localhost:8000/api/v1/ws` (send header `X-API-Key: my-secret-api-key` on connect)
+- **Health:** `GET /api/v1/health` (also requires `X-API-Key`)
 
 ### Run with all env vars
 
 ```bash
 docker run -p 8000:8000 \
-  -e API_KEY=your-secret-key \
+  -e API_KEY= \
   -e HEARTBEAT_INTERVAL_SEC=30 \
   -e SUBSCRIBER_QUEUE_MAX_SIZE=1024 \
   -e TOPIC_RING_BUFFER_SIZE=100 \
@@ -90,7 +90,7 @@ docker run -p 8000:8000 --env-file .env pubsub-api
 7. **WebSocket on Render**
    - Render supports WebSockets on the same URL. Use:
      - **HTTP:** `https://<your-service-name>.onrender.com`
-     - **WebSocket:** `wss://<your-service-name>.onrender.com/ws`
+     - **WebSocket:** `wss://<your-service-name>.onrender.com/api/v1/ws`
    - If you use a custom domain, use that same host with `https` and `wss`.
 
 ### Option B: Deploy a pre-built image (private registry)
@@ -123,12 +123,12 @@ Same Docker image can be used on most container platforms.
 # Install flyctl, then from project root
 fly launch
 # Choose app name, region; use Dockerfile when prompted
-fly secrets set API_KEY=your-secret
+fly secrets set API_KEY=my-secret-api-key
 fly deploy
 ```
 
 - **HTTP:** `https://<app-name>.fly.dev`
-- **WebSocket:** `wss://<app-name>.fly.dev/ws`
+- **WebSocket:** `wss://<app-name>.fly.dev/api/v1/ws`
 
 ### Railway
 
@@ -158,8 +158,8 @@ Set env vars in the Cloud Run service configuration. Use the provided URL; WebSo
 | Item | Value |
 |------|--------|
 | **Default port** | 8000 |
-| **Health** | `GET /health` |
-| **WebSocket** | `WS /ws` (same host, `ws://` or `wss://`) |
+| **Health** | `GET /api/v1/health` |
+| **WebSocket** | `WS /api/v1/ws` (same host, `ws://` or `wss://`) |
 | **Auth (required)** | Set `API_KEY` in env; clients must send header `X-API-Key` |
 | **Bind** | App binds to `0.0.0.0` so it accepts connections inside the container |
 
@@ -170,5 +170,5 @@ Set env vars in the Cloud Run service configuration. Use the provided URL; WebSo
 - [ ] Set `API_KEY` in env (required); clients send header `X-API-Key`.
 - [ ] Use **HTTPS** and **WSS** in production (Render/Fly/Railway provide TLS).
 - [ ] Tune `SUBSCRIBER_QUEUE_MAX_SIZE` and `TOPIC_RING_BUFFER_SIZE` if needed.
-- [ ] Monitor `/health` and `/stats` (e.g. from a load balancer or monitoring service).
+- [ ] Monitor `/api/v1/health` and `/api/v1/stats` (e.g. from a load balancer or monitoring service).
 - [ ] Remember: in-memory state (topics, queues, ring buffers) is lost on restart; for persistence you’d add a backing store (not covered here).

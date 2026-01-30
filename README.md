@@ -2,6 +2,13 @@
 
 In-memory pub-sub with abstract **Publisher** and **Subscriber**, **Topic** and **Message** classes, and observability. No broker; topics hold subscribers and deliver messages in memory.
 
+## Design choices
+
+- **Backpressure:** When a consumer’s queue is full, we **drop the oldest message** and enqueue the new one so slow consumers don’t block publishers; the newest messages are kept.
+- **API key:** All HTTP and WebSocket access requires **X-API-Key**; the server expects **API_KEY** in the environment (or `.env`). No unauthenticated access.
+- **Ring buffer:** Each topic keeps a **ring buffer** (e.g. last 100 messages) for **replay**; subscribers can request **last_n** on subscribe (HTTP or WebSocket) to receive recent messages.
+- **Concurrency:** **Per-topic locks** protect the subscriber set and ring buffer; **thread-safe queues** (`queue.Queue`) per consumer allow safe delivery from multiple publishers/threads.
+
 ## Structure
 
 ```
